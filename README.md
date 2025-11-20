@@ -272,7 +272,6 @@ Treant.js 기반으로 최종 HTML을 생성하고 시각화 초기화.
     - 혈족 여부 계산
     - 최종 Treant.js 설정값 생성
 
-이 단계에서 애플리케이션의 80% 지능이 들어감.
 #### 3. View(Renderer) 계층 — “UI 생성”
 
 - TreeBuilder에서 받은 `config`를 기반으로  
