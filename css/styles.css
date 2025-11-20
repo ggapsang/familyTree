@@ -1,0 +1,119 @@
+body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+.controls {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 4px;
+    border: 1px dashed #ccc;
+}
+
+/* Treant.js Node Styles */
+.node {
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    min-width: 100px;
+}
+
+.node-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.node-desc {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Default Gender Colors (will be overridden by is-blood/is-inlaw if present) */
+.node.male {
+    border-top: 3px solid #4a90e2;
+}
+
+.node.female {
+    border-top: 3px solid #e24a85;
+}
+
+/* Couple Node Styles */
+.couple-node {
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.couple-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.person-box {
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    min-width: 100px;
+}
+
+.person-box.male {
+    border-top: 3px solid #4a90e2;
+}
+
+.person-box.female {
+    border-top: 3px solid #e24a85;
+}
+
+.couple-connector {
+    width: 40px;
+    height: 3px;
+    background-color: #e74c3c;
+    align-self: center;
+}
+
+/* Blood Relation vs In-law Styling */
+
+/* Blood Relation (Has Parents) - Black Border */
+.node.is-blood,
+.person-box.is-blood {
+    border-top-color: #333 !important;
+    border-top-width: 3px;
+    border-top-style: solid;
+}
+
+/* In-law (No Parents in tree) - Red Border */
+.node.is-inlaw,
+.person-box.is-inlaw {
+    border-top-color: #e74c3c !important;
+    /* Red */
+    border-top-width: 3px;
+    border-top-style: solid;
+}
