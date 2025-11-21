@@ -89,7 +89,9 @@ FamilyTreeApp.View.Renderer = class {
                         'border-color': '#888',
                         'border-style': 'dashed',
                         'label': '',
-                        'padding': '15px'
+                        'width': '280px',  // Fixed width to contain 2 people
+                        'height': '80px',  // Fixed height
+                        'padding': '10px'
                     }
                 },
 

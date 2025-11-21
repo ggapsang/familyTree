@@ -264,11 +264,48 @@ FamilyTreeApp.Services.GraphBuilder = class {
         const horizontalGap = 200;
 
         depthGroups.forEach((people, depth) => {
-            people.forEach((personId, index) => {
+            let currentIndex = 0;
+            const processed = new Set();
+
+            // First, process all couples at this depth
+            people.forEach(personId => {
+                if (processed.has(personId)) return;
+
+                const coupleId = this.personToCouple.get(personId);
+                if (coupleId) {
+                    const couple = this.couples.get(coupleId);
+                    const spouse1 = couple.spouse1;
+                    const spouse2 = couple.spouse2;
+
+                    // Check if both spouses are at this depth
+                    if (this.depthMap.get(spouse1) === depth && this.depthMap.get(spouse2) === depth) {
+                        // Place spouses adjacent to each other
+                        this.positionMap.set(spouse1, {
+                            x: depth * verticalGap,
+                            y: currentIndex * horizontalGap
+                        });
+                        this.positionMap.set(spouse2, {
+                            x: depth * verticalGap,
+                            y: (currentIndex + 0.5) * horizontalGap // Slightly offset for visual grouping
+                        });
+
+                        processed.add(spouse1);
+                        processed.add(spouse2);
+                        currentIndex += 2; // Skip 2 positions for the couple
+                    }
+                }
+            });
+
+            // Then, process single people at this depth
+            people.forEach(personId => {
+                if (processed.has(personId)) return;
+
                 this.positionMap.set(personId, {
                     x: depth * verticalGap,
-                    y: index * horizontalGap
+                    y: currentIndex * horizontalGap
                 });
+                processed.add(personId);
+                currentIndex++;
             });
         });
     }
@@ -276,12 +313,27 @@ FamilyTreeApp.Services.GraphBuilder = class {
     generateElements() {
         const elements = [];
 
-        // 1. Couple Nodes (Compound Nodes)
+        // 1. Couple Nodes (Compound Nodes) with explicit positions
         this.couples.forEach(couple => {
-            elements.push({
-                data: { id: couple.id, type: 'couple' },
-                classes: 'couple'
-            });
+            const spouse1Pos = this.positionMap.get(couple.spouse1);
+            const spouse2Pos = this.positionMap.get(couple.spouse2);
+
+            if (spouse1Pos && spouse2Pos) {
+                // Calculate center position between spouses
+                const centerX = (spouse1Pos.y + spouse2Pos.y) / 2;
+                const centerY = -(spouse1Pos.x + spouse2Pos.x) / 2;
+
+                elements.push({
+                    data: { id: couple.id, type: 'couple' },
+                    classes: 'couple',
+                    position: { x: centerX, y: centerY }
+                });
+            } else {
+                elements.push({
+                    data: { id: couple.id, type: 'couple' },
+                    classes: 'couple'
+                });
+            }
         });
 
         // 2. Person Nodes with position metadata
@@ -309,24 +361,58 @@ FamilyTreeApp.Services.GraphBuilder = class {
             elements.push({
                 data: data,
                 classes: `person ${person.gender === '남' ? 'male' : 'female'} ${person.isBlood ? 'blood' : 'inlaw'}`,
-                position: { x: position.y, y: position.x } // Note: swapped for vertical layout
+                position: { x: position.y, y: -position.x } // Inverted y to put ancestors at top
             });
         });
 
         // 3. Edges (Relations)
         this.parentsMap.forEach((parents, childId) => {
-            parents.forEach(parentId => {
-                const edgeId = `${parentId}->${childId}`;
+            // Check if both parents are a couple
+            if (parents.length === 2) {
+                const coupleKey = [parents[0], parents[1]].sort().join('&');
 
-                elements.push({
-                    data: {
-                        id: edgeId,
-                        source: parentId,
-                        target: childId
-                    },
-                    classes: 'hierarchy'
+                if (this.couples.has(coupleKey)) {
+                    // Parents are a couple - create single edge from couple to child
+                    const edgeId = `${coupleKey}->${childId}`;
+
+                    elements.push({
+                        data: {
+                            id: edgeId,
+                            source: coupleKey,
+                            target: childId
+                        },
+                        classes: 'hierarchy'
+                    });
+                } else {
+                    // Parents are not a couple - create separate edges
+                    parents.forEach(parentId => {
+                        const edgeId = `${parentId}->${childId}`;
+
+                        elements.push({
+                            data: {
+                                id: edgeId,
+                                source: parentId,
+                                target: childId
+                            },
+                            classes: 'hierarchy'
+                        });
+                    });
+                }
+            } else {
+                // Single parent - create edge from parent to child
+                parents.forEach(parentId => {
+                    const edgeId = `${parentId}->${childId}`;
+
+                    elements.push({
+                        data: {
+                            id: edgeId,
+                            source: parentId,
+                            target: childId
+                        },
+                        classes: 'hierarchy'
+                    });
                 });
-            });
+            }
         });
 
         return elements;
