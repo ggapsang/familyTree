@@ -78,33 +78,30 @@ FamilyTreeApp.View.Renderer = class {
                     }
                 },
 
-                // Couple Compound Node
-                {
-                    selector: 'node[type="couple"]',
-                    style: {
-                        'shape': 'rectangle',
-                        'background-color': '#fff',
-                        'background-opacity': 0.1,
-                        'border-width': 2,
-                        'border-color': '#888',
-                        'border-style': 'dashed',
-                        'label': '',
-                        'width': '280px',  // Fixed width to contain 2 people
-                        'height': '80px',  // Fixed height
-                        'padding': '10px'
-                    }
-                },
 
-                // Edges
+                // Parent-Child Edges (general edges)
                 {
-                    selector: 'edge',
+                    selector: 'edge.hierarchy',
                     style: {
                         'width': 2,
                         'line-color': '#999',
                         'target-arrow-color': '#999',
                         'target-arrow-shape': 'triangle',
-                        'curve-style': 'bezier', // Changed from taxi to bezier for better separation
-                        // 'taxi-direction': 'vertical' 
+                        'curve-style': 'bezier',
+                        'z-index': 10
+                    }
+                },
+
+                // Couple Edges (Red subtle lines between spouses) - MUST come after general edge
+                {
+                    selector: 'edge.couple-edge',
+                    style: {
+                        'width': 1,
+                        'line-color': '#e74c3c',
+                        'opacity': 0.4,
+                        'curve-style': 'straight',
+                        'target-arrow-shape': 'none',
+                        'z-index': 1
                     }
                 }
             ],

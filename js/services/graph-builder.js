@@ -53,6 +53,8 @@ FamilyTreeApp.Services.GraphBuilder = class {
 
         console.log(`Graph Build Complete. Nodes: ${this.peopleMap.size}, Couples: ${this.couples.size}, Relations: ${validRelationsCount}`);
         console.log("Depth Map:", Array.from(this.depthMap.entries()));
+        console.log("Position Map:", Array.from(this.positionMap.entries()));
+        console.log("Total Elements:", elements.length);
 
         return {
             elements: elements,
@@ -245,9 +247,12 @@ FamilyTreeApp.Services.GraphBuilder = class {
                 }
             }
         }
+
+        console.log(`Depth computation complete. Total nodes with depth: ${this.depthMap.size}`);
     }
 
     // Compute horizontal positions for nodes at the same depth
+    // Uses intelligent alignment to minimize edge crossings
     computePositions() {
         // Group nodes by depth
         const depthGroups = new Map();
@@ -259,86 +264,194 @@ FamilyTreeApp.Services.GraphBuilder = class {
             depthGroups.get(depth).push(personId);
         });
 
-        // Assign positions
         const verticalGap = 150;
-        const horizontalGap = 200;
+        const horizontalGap = 120; // Reduced from 200 for more compact layout
 
-        depthGroups.forEach((people, depth) => {
-            let currentIndex = 0;
-            const processed = new Set();
+        // Sort depths from highest (ancestors) to lowest (descendants)
+        const sortedDepths = Array.from(depthGroups.keys()).sort((a, b) => b - a);
 
-            // First, process all couples at this depth
-            people.forEach(personId => {
-                if (processed.has(personId)) return;
+        // Process each depth level
+        sortedDepths.forEach(depth => {
+            const people = depthGroups.get(depth);
 
-                const coupleId = this.personToCouple.get(personId);
-                if (coupleId) {
-                    const couple = this.couples.get(coupleId);
-                    const spouse1 = couple.spouse1;
-                    const spouse2 = couple.spouse2;
+            // Build family groups at this depth
+            const familyGroups = this.buildFamilyGroups(people, depth);
 
-                    // Check if both spouses are at this depth
-                    if (this.depthMap.get(spouse1) === depth && this.depthMap.get(spouse2) === depth) {
-                        // Place spouses adjacent to each other
-                        this.positionMap.set(spouse1, {
-                            x: depth * verticalGap,
-                            y: currentIndex * horizontalGap
-                        });
-                        this.positionMap.set(spouse2, {
-                            x: depth * verticalGap,
-                            y: (currentIndex + 0.5) * horizontalGap // Slightly offset for visual grouping
-                        });
+            // Position family groups, considering parent positions
+            this.positionFamilyGroups(familyGroups, depth, verticalGap, horizontalGap);
+        });
+    }
 
-                        processed.add(spouse1);
-                        processed.add(spouse2);
-                        currentIndex += 2; // Skip 2 positions for the couple
+    // Build family groups: siblings together (couples are handled during positioning)
+    buildFamilyGroups(people, depth) {
+        const processed = new Set();
+        const groups = [];
+
+        // Group siblings (people with same parents)
+        const siblingGroups = new Map();
+        people.forEach(personId => {
+            const parents = this.parentsMap.get(personId) || [];
+            if (parents.length === 0) return; // Skip people with no parents
+
+            const parentKey = [...parents].sort().join('&');
+
+            if (!siblingGroups.has(parentKey)) {
+                siblingGroups.set(parentKey, []);
+            }
+            siblingGroups.get(parentKey).push(personId);
+        });
+
+        // Add sibling groups with intelligent sorting
+        siblingGroups.forEach((siblings, parentKey) => {
+            if (siblings.length > 0) {
+                // Sort siblings: more children → left, merge points → right
+                const sortedSiblings = siblings.sort((a, b) => {
+                    const aChildren = (this.childrenMap.get(a) || []).length;
+                    const bChildren = (this.childrenMap.get(b) || []).length;
+                    const aHasSpouse = this.personToCouple.has(a);
+                    const bHasSpouse = this.personToCouple.has(b);
+
+                    // Priority 1: Merge points (has spouse) → right (higher index)
+                    if (aHasSpouse && !bHasSpouse) return 1;  // a goes right
+                    if (!aHasSpouse && bHasSpouse) return -1; // b goes right
+
+                    // Priority 2: Among non-merge-points, more children → left (lower index)
+                    if (aChildren !== bChildren) {
+                        return bChildren - aChildren; // Descending order (more children first)
                     }
-                }
-            });
 
-            // Then, process single people at this depth
-            people.forEach(personId => {
-                if (processed.has(personId)) return;
-
-                this.positionMap.set(personId, {
-                    x: depth * verticalGap,
-                    y: currentIndex * horizontalGap
+                    // Default: maintain original order
+                    return 0;
                 });
-                processed.add(personId);
-                currentIndex++;
+
+                groups.push({
+                    type: 'siblings',
+                    members: sortedSiblings,
+                    parentKey: parentKey
+                });
+                sortedSiblings.forEach(s => processed.add(s));
+            }
+        });
+
+        // Add remaining singles
+        people.forEach(personId => {
+            if (!processed.has(personId)) {
+                groups.push({
+                    type: 'single',
+                    members: [personId]
+                });
+            }
+        });
+
+        console.log(`Depth ${depth} - Family Groups:`, groups.map(g => ({
+            type: g.type,
+            members: g.members.map(m => this.peopleMap.get(m)?.name),
+            childCounts: g.members.map(m => (this.childrenMap.get(m) || []).length),
+            hasSpouse: g.members.map(m => this.personToCouple.has(m))
+        })));
+
+        return groups;
+    }
+
+    // Position family groups to minimize edge crossings
+    positionFamilyGroups(groups, depth, verticalGap, horizontalGap) {
+        // Calculate ideal position for each group based on parent positions
+        const groupsWithPositions = groups.map(group => {
+            let idealY = 0;
+            let hasParentPosition = false;
+
+            // Calculate center of parents
+            group.members.forEach(personId => {
+                const parents = this.parentsMap.get(personId) || [];
+                parents.forEach(parentId => {
+                    const parentPos = this.positionMap.get(parentId);
+                    if (parentPos) {
+                        idealY += parentPos.y;
+                        hasParentPosition = true;
+                    }
+                });
             });
+
+            if (hasParentPosition) {
+                const parentCount = group.members.reduce((count, personId) => {
+                    return count + (this.parentsMap.get(personId) || []).length;
+                }, 0);
+                idealY = parentCount > 0 ? idealY / parentCount : 0;
+            }
+
+            return {
+                group: group,
+                idealY: idealY,
+                hasParentPosition: hasParentPosition
+            };
+        });
+
+        // Sort groups by ideal position
+        groupsWithPositions.sort((a, b) => {
+            // Groups with parent positions come first, sorted by position
+            if (a.hasParentPosition && !b.hasParentPosition) return -1;
+            if (!a.hasParentPosition && b.hasParentPosition) return 1;
+            return a.idealY - b.idealY;
+        });
+
+        // Assign actual positions
+        let currentY = 0;
+
+        groupsWithPositions.forEach(({ group, idealY, hasParentPosition }) => {
+            // Try to position near ideal if possible
+            if (hasParentPosition && currentY < idealY) {
+                currentY = Math.max(currentY, idealY - (group.members.length * horizontalGap / 2));
+            }
+
+            // Position members of this group
+            if (group.type === 'siblings' || group.type === 'single') {
+                const positionedInCouple = new Set(); // Track people already positioned as part of a couple
+
+                group.members.forEach(personId => {
+                    if (positionedInCouple.has(personId)) return; // Skip if already positioned
+
+                    // Check if this person is in a couple at this depth
+                    const coupleId = this.personToCouple.get(personId);
+                    let isCouple = false;
+                    let spouseId = null;
+
+                    if (coupleId) {
+                        const couple = this.couples.get(coupleId);
+                        spouseId = couple.spouse1 === personId ? couple.spouse2 : couple.spouse1;
+
+                        // Check if spouse is at the same depth
+                        if (this.depthMap.get(spouseId) === this.depthMap.get(personId)) {
+                            isCouple = true;
+                        }
+                    }
+
+                    // Position this person
+                    this.positionMap.set(personId, {
+                        x: this.depthMap.get(personId) * 150, // verticalGap
+                        y: currentY
+                    });
+
+                    if (isCouple && spouseId) {
+                        // Position spouse next to this person
+                        this.positionMap.set(spouseId, {
+                            x: this.depthMap.get(spouseId) * 150,
+                            y: currentY + 0.5 * horizontalGap // Tighter couple spacing
+                        });
+                        currentY += 1.6 * horizontalGap; // Total space for couple
+                        positionedInCouple.add(spouseId); // Mark spouse as positioned
+                    } else {
+                        currentY += horizontalGap; // Normal spacing for single person
+                    }
+                });
+            }
         });
     }
 
     generateElements() {
         const elements = [];
 
-        // 1. Couple Nodes (Compound Nodes) with explicit positions
-        this.couples.forEach(couple => {
-            const spouse1Pos = this.positionMap.get(couple.spouse1);
-            const spouse2Pos = this.positionMap.get(couple.spouse2);
-
-            if (spouse1Pos && spouse2Pos) {
-                // Calculate center position between spouses
-                const centerX = (spouse1Pos.y + spouse2Pos.y) / 2;
-                const centerY = -(spouse1Pos.x + spouse2Pos.x) / 2;
-
-                elements.push({
-                    data: { id: couple.id, type: 'couple' },
-                    classes: 'couple',
-                    position: { x: centerX, y: centerY }
-                });
-            } else {
-                elements.push({
-                    data: { id: couple.id, type: 'couple' },
-                    classes: 'couple'
-                });
-            }
-        });
-
-        // 2. Person Nodes with position metadata
+        // 1. Person Nodes with position metadata
         this.peopleMap.forEach(person => {
-            const coupleId = this.personToCouple.get(person.id);
             const position = this.positionMap.get(person.id) || { x: 0, y: 0 };
             const depth = this.depthMap.get(person.id) || 0;
 
@@ -354,10 +467,6 @@ FamilyTreeApp.Services.GraphBuilder = class {
                 posY: position.y
             };
 
-            if (coupleId) {
-                data.parent = coupleId;
-            }
-
             elements.push({
                 data: data,
                 classes: `person ${person.gender === '남' ? 'male' : 'female'} ${person.isBlood ? 'blood' : 'inlaw'}`,
@@ -365,20 +474,32 @@ FamilyTreeApp.Services.GraphBuilder = class {
             });
         });
 
-        // 3. Edges (Relations)
+        // 2. Couple Edges (Red undirected edges between spouses)
+        this.couples.forEach(couple => {
+            elements.push({
+                data: {
+                    id: `couple-${couple.id}`,
+                    source: couple.spouse1,
+                    target: couple.spouse2
+                },
+                classes: 'couple-edge'
+            });
+        });
+
+        // 3. Parent-Child Edges (Relations)
         this.parentsMap.forEach((parents, childId) => {
             // Check if both parents are a couple
             if (parents.length === 2) {
                 const coupleKey = [parents[0], parents[1]].sort().join('&');
 
                 if (this.couples.has(coupleKey)) {
-                    // Parents are a couple - create single edge from couple to child
-                    const edgeId = `${coupleKey}->${childId}`;
+                    // Parents are a couple - create single edge from first parent (father) to child
+                    const edgeId = `${parents[0]}->${childId}`;
 
                     elements.push({
                         data: {
                             id: edgeId,
-                            source: coupleKey,
+                            source: parents[0], // Use first parent instead of couple node
                             target: childId
                         },
                         classes: 'hierarchy'
