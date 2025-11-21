@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 FamilyTreeApp.App = class {
     constructor() {
         this.dataLoader = new FamilyTreeApp.Services.DataLoader();
-        this.treeBuilder = new FamilyTreeApp.Services.TreeBuilder();
+        this.treeBuilder = new FamilyTreeApp.Services.GraphBuilder();
         this.renderer = new FamilyTreeApp.View.Renderer();
     }
 
@@ -31,13 +31,13 @@ FamilyTreeApp.App = class {
             // 1. Load Data
             const { peopleData, relationData, coupleData } = await this.dataLoader.readFile(file);
 
-            // 2. Build Tree
-            const { config, stats } = this.treeBuilder.build(peopleData, relationData, coupleData);
+            // 2. Build Graph
+            const { elements, stats } = this.treeBuilder.build(peopleData, relationData, coupleData);
 
             // 3. Render
             console.log(`Loaded: ${stats.peopleCount} people, ${stats.relationCount} relations`);
             this.renderer.showSuccess(`데이터 로드 성공! (사람: ${stats.peopleCount}명, 관계: ${stats.relationCount}건)`);
-            this.renderer.render(config);
+            this.renderer.render({ elements, stats });
 
         } catch (error) {
             console.error('Error:', error);

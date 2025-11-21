@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>가계도 시각화 프로토타입</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/treant-js/1.0/Treant.css" />
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
     <div class="container">
         <h1>가계도 시각화</h1>
@@ -18,17 +19,19 @@
     </div>
 
     <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/treant-js/1.0/Treant.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
+
     <!-- App Logic -->
     <!-- App Logic -->
     <script src="js/models/person.js"></script>
     <script src="js/models/couple.js"></script>
     <script src="js/services/data-loader.js"></script>
-    <script src="js/services/tree-builder.js"></script>
+    <script src="js/services/graph-builder.js"></script>
     <script src="js/view/renderer.js"></script>
     <script src="js/app.js"></script>
 </body>
+
 </html>
