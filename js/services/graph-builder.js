@@ -265,7 +265,7 @@ FamilyTreeApp.Services.GraphBuilder = class {
         });
 
         const verticalGap = 150;
-        const horizontalGap = 120; // Reduced from 200 for more compact layout
+        const horizontalGap = 200; // Reduced from 200 for more compact layout
 
         // Sort depths from highest (ancestors) to lowest (descendants)
         const sortedDepths = Array.from(depthGroups.keys()).sort((a, b) => b - a);
@@ -435,7 +435,7 @@ FamilyTreeApp.Services.GraphBuilder = class {
                         // Position spouse next to this person
                         this.positionMap.set(spouseId, {
                             x: this.depthMap.get(spouseId) * 150,
-                            y: currentY + 0.5 * horizontalGap // Tighter couple spacing
+                            y: currentY + 0.7 * horizontalGap // Tighter couple spacing
                         });
                         currentY += 1.6 * horizontalGap; // Total space for couple
                         positionedInCouple.add(spouseId); // Mark spouse as positioned

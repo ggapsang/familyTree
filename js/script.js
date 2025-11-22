@@ -302,7 +302,7 @@ function buildTreeConfig(people, relations, coupleData) {
             chart: {
                 container: "#tree-simple",
                 connectors: { type: 'step' },
-                node: { HTMLclass: 'node' }
+                node: { HTMLclass: 'node' },
             },
             nodeStructure: nodeStructure
         },
