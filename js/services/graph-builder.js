@@ -76,10 +76,12 @@ FamilyTreeApp.Services.GraphBuilder = class {
     }
 
     processPeople(people) {
+        console.log('=== processPeople 시작 ===');
         people.forEach(p => {
             const rawName = p['이름'] ? String(p['이름']).trim() : '';
             if (rawName) {
                 const key = this.normalize(rawName);
+                console.log(`원본: "${rawName}" -> 정규화: "${key}"`);
                 this.peopleMap.set(key, {
                     id: key,
                     name: rawName, // Keep original for display
@@ -89,9 +91,11 @@ FamilyTreeApp.Services.GraphBuilder = class {
                 });
             }
         });
+        console.log('=== processPeople 완료, 총 인원:', this.peopleMap.size, '===');
     }
 
     processRelations(relations) {
+        console.log('=== processRelations 시작 ===');
         let count = 0;
         relations.forEach(rel => {
             const parentRaw = rel['부모'] ? String(rel['부모']).trim() : '';
@@ -101,6 +105,8 @@ FamilyTreeApp.Services.GraphBuilder = class {
 
             const parentKey = this.normalize(parentRaw);
             const childKey = this.normalize(childRaw);
+
+            console.log(`관계: "${parentRaw}" (${parentKey}) -> "${childRaw}" (${childKey})`);
 
             count++;
 
@@ -114,12 +120,15 @@ FamilyTreeApp.Services.GraphBuilder = class {
             if (!this.childrenMap.has(parentKey)) this.childrenMap.set(parentKey, []);
             if (!this.childrenMap.get(parentKey).includes(childKey)) this.childrenMap.get(parentKey).push(childKey);
         });
+        console.log('=== processRelations 완료, 총 관계:', count, '===');
         return count;
     }
 
     identifyCouples(coupleData) {
+        console.log('=== identifyCouples 시작 ===');
         // Explicit Couples
         if (coupleData) {
+            console.log('명시적 부부 데이터 처리 중...');
             coupleData.forEach(row => {
                 const p1Raw = row['이름'] ? String(row['이름']).trim() : '';
                 const p2Raw = row['배우자'] ? String(row['배우자']).trim() : '';
@@ -127,6 +136,8 @@ FamilyTreeApp.Services.GraphBuilder = class {
                 if (p1Raw && p2Raw) {
                     const p1Key = this.normalize(p1Raw);
                     const p2Key = this.normalize(p2Raw);
+
+                    console.log(`부부: "${p1Raw}" (${p1Key}) & "${p2Raw}" (${p2Key})`);
 
                     this.ensurePersonExists(p1Key, p1Raw);
                     this.ensurePersonExists(p2Key, p2Raw);
@@ -136,11 +147,14 @@ FamilyTreeApp.Services.GraphBuilder = class {
         }
 
         // Inferred Couples (Parents sharing a child)
+        console.log('자식을 공유하는 부모로부터 부부 추론 중...');
         this.parentsMap.forEach((parents, childKey) => {
             if (parents.length === 2) {
+                console.log(`추론된 부부: ${parents[0]} & ${parents[1]} (자식: ${childKey})`);
                 this.createCouple(parents[0], parents[1]);
             }
         });
+        console.log('=== identifyCouples 완료, 총 부부:', this.couples.size, '===');
     }
 
     createCouple(p1Key, p2Key) {
