@@ -10,12 +10,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 FamilyTreeApp.App = class {
+    /**
+     * Creates a new App instance.
+     * Initializes the services and view.
+     */
     constructor() {
+        /** @type {FamilyTreeApp.Services.DataLoader} Service for loading data. */
         this.dataLoader = new FamilyTreeApp.Services.DataLoader();
+        /** @type {FamilyTreeApp.Services.GraphBuilder} Service for building the graph. */
         this.treeBuilder = new FamilyTreeApp.Services.GraphBuilder();
+        /** @type {FamilyTreeApp.View.Renderer} View for rendering the graph. */
         this.renderer = new FamilyTreeApp.View.Renderer();
     }
 
+    /**
+     * Initializes the application.
+     * Sets up event listeners.
+     */
     init() {
         const fileInput = document.getElementById('excel-file');
         if (fileInput) {
@@ -23,6 +34,11 @@ FamilyTreeApp.App = class {
         }
     }
 
+    /**
+     * Handles the file upload event.
+     * Reads the file, builds the graph, and renders it.
+     * @param {Event} e - The change event from the file input.
+     */
     async handleFileUpload(e) {
         const file = e.target.files[0];
         if (!file) return;

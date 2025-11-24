@@ -8,20 +8,39 @@ FamilyTreeApp.Services = FamilyTreeApp.Services || {};
 
 FamilyTreeApp.Services.GraphBuilder = class {
     constructor() {
+        /** @type {Map<string, Object>} Map of person ID to Person object. */
         this.peopleMap = new Map();
+        /** @type {Map<string, Object>} Map of couple ID to Couple object. */
         this.couples = new Map();
+        /** @type {Map<string, string>} Map of person ID to their couple ID. */
         this.personToCouple = new Map();
+        /** @type {Map<string, string[]>} Map of child ID to array of parent IDs. */
         this.parentsMap = new Map(); // childKey -> [parentKeys]
+        /** @type {Map<string, string[]>} Map of parent ID to array of child IDs. */
         this.childrenMap = new Map(); // parentKey -> [childKeys]
+        /** @type {Map<string, number>} Map of person ID to their depth level from the pivot. */
         this.depthMap = new Map(); // personKey -> depth from pivot
+        /** @type {Map<string, {x: number, y: number}>} Map of person ID to their calculated position. */
         this.positionMap = new Map(); // personKey -> {x, y}
     }
 
-    // Helper: Normalize name for keys (remove spaces and hyphens)
+    /**
+     * Normalizes a name to create a consistent key.
+     * Removes spaces and hyphens.
+     * @param {string} name - The name to normalize.
+     * @return {string} The normalized key.
+     */
     normalize(name) {
         return name ? String(name).replace(/[\s-]+/g, '').trim() : '';
     }
 
+    /**
+     * Builds the graph data from the raw Excel data.
+     * @param {Array} peopleData - Array of person data objects.
+     * @param {Array} relationData - Array of relationship data objects.
+     * @param {Array} coupleData - Array of couple data objects.
+     * @return {Object} An object containing the Cytoscape elements and statistics.
+     */
     build(peopleData, relationData, coupleData) {
         this.reset();
         console.log("Starting Depth-Based Graph Build...");
@@ -65,6 +84,9 @@ FamilyTreeApp.Services.GraphBuilder = class {
         };
     }
 
+    /**
+     * Resets all internal maps and state.
+     */
     reset() {
         this.peopleMap.clear();
         this.couples.clear();
@@ -75,6 +97,10 @@ FamilyTreeApp.Services.GraphBuilder = class {
         this.positionMap.clear();
     }
 
+    /**
+     * Processes the list of people and populates the peopleMap.
+     * @param {Array} people - Array of person data objects.
+     */
     processPeople(people) {
         console.log('=== processPeople 시작 ===');
         people.forEach(p => {
@@ -94,6 +120,11 @@ FamilyTreeApp.Services.GraphBuilder = class {
         console.log('=== processPeople 완료, 총 인원:', this.peopleMap.size, '===');
     }
 
+    /**
+     * Processes parent-child relationships.
+     * @param {Array} relations - Array of relationship objects (parent -> child).
+     * @return {number} The count of valid relationships processed.
+     */
     processRelations(relations) {
         console.log('=== processRelations 시작 ===');
         let count = 0;
@@ -124,6 +155,10 @@ FamilyTreeApp.Services.GraphBuilder = class {
         return count;
     }
 
+    /**
+     * Identifies couples from explicit data and infers them from shared children.
+     * @param {Array} coupleData - Array of explicit couple data.
+     */
     identifyCouples(coupleData) {
         console.log('=== identifyCouples 시작 ===');
         // Explicit Couples
@@ -157,6 +192,12 @@ FamilyTreeApp.Services.GraphBuilder = class {
         console.log('=== identifyCouples 완료, 총 부부:', this.couples.size, '===');
     }
 
+    /**
+     * Creates a couple relationship between two people.
+     * @param {string} p1Key - ID of the first person.
+     * @param {string} p2Key - ID of the second person.
+     * @return {Object} The created or existing Couple object.
+     */
     createCouple(p1Key, p2Key) {
         const key = [p1Key, p2Key].sort().join('&');
         if (!this.couples.has(key)) {
@@ -167,6 +208,11 @@ FamilyTreeApp.Services.GraphBuilder = class {
         return this.couples.get(key);
     }
 
+    /**
+     * Ensures a person exists in the peopleMap. If not, creates a placeholder.
+     * @param {string} key - The ID of the person.
+     * @param {string} rawName - The display name of the person.
+     */
     ensurePersonExists(key, rawName) {
         if (!this.peopleMap.has(key)) {
             this.peopleMap.set(key, {
@@ -178,6 +224,10 @@ FamilyTreeApp.Services.GraphBuilder = class {
         }
     }
 
+    /**
+     * Determines if a person is a blood relative or in-law based on parents and gender.
+     * This is a heuristic: having parents in the tree implies blood relation.
+     */
     determineStatus() {
         this.peopleMap.forEach(person => {
             const hasParents = this.parentsMap.has(person.id) && this.parentsMap.get(person.id).length > 0;
@@ -194,7 +244,11 @@ FamilyTreeApp.Services.GraphBuilder = class {
         });
     }
 
-    // Find the pivot node (person with most connections - likely the central person)
+    /**
+     * Finds the "pivot" node, which is the person with the most connections.
+     * This node serves as the root/center for depth calculations.
+     * @return {string} The ID of the pivot node.
+     */
     findPivotNode() {
         let maxConnections = 0;
         let pivotId = null;
@@ -215,7 +269,11 @@ FamilyTreeApp.Services.GraphBuilder = class {
         return pivotId || Array.from(this.peopleMap.keys())[0];
     }
 
-    // Compute depth from pivot node using BFS
+    /**
+     * Computes the depth (generation level) of each person relative to the pivot.
+     * Uses BFS traversal.
+     * @param {string} pivotId - The ID of the starting node.
+     */
     computeDepths(pivotId) {
         this.depthMap.set(pivotId, 0);
 
@@ -265,8 +323,10 @@ FamilyTreeApp.Services.GraphBuilder = class {
         console.log(`Depth computation complete. Total nodes with depth: ${this.depthMap.size}`);
     }
 
-    // Compute horizontal positions for nodes at the same depth
-    // Uses intelligent alignment to minimize edge crossings
+    /**
+     * Computes the (x, y) positions for all nodes.
+     * Groups nodes by depth and arranges them to minimize edge crossings.
+     */
     computePositions() {
         // Group nodes by depth
         const depthGroups = new Map();
@@ -296,7 +356,12 @@ FamilyTreeApp.Services.GraphBuilder = class {
         });
     }
 
-    // Build family groups: siblings together (couples are handled during positioning)
+    /**
+     * Groups people at the same depth into family units (siblings).
+     * @param {string[]} people - Array of person IDs at this depth.
+     * @param {number} depth - The current depth level.
+     * @return {Array} Array of group objects (siblings or singles).
+     */
     buildFamilyGroups(people, depth) {
         const processed = new Set();
         const groups = [];
@@ -367,7 +432,13 @@ FamilyTreeApp.Services.GraphBuilder = class {
         return groups;
     }
 
-    // Position family groups to minimize edge crossings
+    /**
+     * Positions family groups horizontally within their depth level.
+     * @param {Array} groups - Array of family groups.
+     * @param {number} depth - The current depth level.
+     * @param {number} verticalGap - Vertical distance between generations.
+     * @param {number} horizontalGap - Horizontal distance between people.
+     */
     positionFamilyGroups(groups, depth, verticalGap, horizontalGap) {
         // Calculate ideal position for each group based on parent positions
         const groupsWithPositions = groups.map(group => {
@@ -461,6 +532,10 @@ FamilyTreeApp.Services.GraphBuilder = class {
         });
     }
 
+    /**
+     * Generates the Cytoscape elements (nodes and edges) from the processed data.
+     * @return {Array} Array of Cytoscape element definitions.
+     */
     generateElements() {
         const elements = [];
 

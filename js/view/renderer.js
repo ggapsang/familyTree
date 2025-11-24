@@ -7,11 +7,20 @@ FamilyTreeApp.View = FamilyTreeApp.View || {};
 
 FamilyTreeApp.View.Renderer = class {
     constructor() {
+        /** @type {string} ID of the DOM element to render the graph in. */
         this.containerId = 'tree-simple';
+        /** @type {string} Selector for the help text element. */
         this.helpTextSelector = '.help-text';
+        /** @type {Object} The Cytoscape instance. */
         this.cy = null;
     }
 
+    /**
+     * Renders the family tree graph using Cytoscape.js.
+     * @param {Object} data - The data object containing elements and stats.
+     * @param {Array} data.elements - Array of Cytoscape elements.
+     * @param {Object} data.stats - Statistics about the graph.
+     */
     render(data) {
         // data contains { elements: [], stats: {} }
 
@@ -26,9 +35,9 @@ FamilyTreeApp.View.Renderer = class {
                 {
                     selector: 'node[type="person"]',
                     style: {
-                        'shape': 'rectangle',
-                        'width': '120px',
-                        'height': '60px',
+                        'shape': 'ellipse',
+                        'width': '100px',
+                        'height': '100px',  // Same as width for perfect circle
                         'background-color': '#ffffff',
                         'border-width': 3,
                         'border-color': '#ccc', // Default
@@ -37,18 +46,9 @@ FamilyTreeApp.View.Renderer = class {
                         'text-halign': 'center',
                         'font-size': '14px',
                         'text-wrap': 'wrap',
-                        'text-max-width': '100px'
+                        'text-max-width': '80px'
                     }
                 },
-                // Gender Colors (Top Border simulation via border-color for now, or full border)
-                // Cytoscape doesn't support individual border side colors easily without extensions.
-                // We will use border color for Blood/In-law and background or ghost node for gender?
-                // Let's stick to the plan: 
-                // Male: Blue-ish theme? 
-                // Let's use border color for Blood/In-law (Black/Red) and text/background hint for gender.
-
-                // Actually, user wanted "Male Blue-ish, Female Pink-ish".
-                // Let's use background color for gender (light) and border for status.
                 {
                     selector: 'node.male',
                     style: {
@@ -78,7 +78,6 @@ FamilyTreeApp.View.Renderer = class {
                     }
                 },
 
-
                 // Parent-Child Edges (general edges)
                 {
                     selector: 'edge.hierarchy',
@@ -92,7 +91,7 @@ FamilyTreeApp.View.Renderer = class {
                     }
                 },
 
-                // Couple Edges (Red subtle lines between spouses) - MUST come after general edge
+                // Couple Edges (Red subtle lines between spouses)
                 {
                     selector: 'edge.couple-edge',
                     style: {
@@ -107,11 +106,74 @@ FamilyTreeApp.View.Renderer = class {
             ],
 
             layout: {
-                name: 'preset',
+                name: 'cola',
+                animate: true,
+                randomize: false,
+                avoidOverlap: true,
+                handleDisconnected: true,
+                convergenceThreshold: 0.01,
+                nodeSpacing: 50,
+                edgeLength: function (edge) {
+                    // Keep couple edges very short
+                    if (edge.hasClass('couple-edge')) {
+                        return 30;
+                    }
+                    return 150;
+                },
+                // Preserve hierarchical structure
+                flow: { axis: 'y', minSeparation: 150 },
+                alignment: function (node) {
+                    return node.data('depth');
+                },
+                // Slower, smoother physics
+                unconstrIter: 20,
+                userConstIter: 20,
+                allConstIter: 50,
+                infinite: false,  // Don't run continuously
+                fit: true,  // Fit on initial render only
                 padding: 50
             },
 
+            userZoomingEnabled: true,  // Enable zoom
             wheelSensitivity: 0.2
+        });
+
+        // Register Cola extension
+        if (typeof cytoscape('core', 'cola') !== 'function') {
+            cytoscape.use(cytoscapeCola);
+        }
+
+        // Pause physics during drag, resume after with current positions
+        this.cy.on('free', 'node', () => {
+            // Resume physics briefly when drag ends, using CURRENT positions
+            const layout = this.cy.layout({
+                name: 'cola',
+                animate: true,
+                animationDuration: 1000,  // Slower animation for smoother feel
+                randomize: false,  // Keep current positions!
+                fit: false,  // DON'T reset viewport - THIS IS THE KEY
+                avoidOverlap: true,
+                handleDisconnected: true,
+                convergenceThreshold: 0.01,
+                nodeSpacing: 50,
+                edgeLength: function (edge) {
+                    if (edge.hasClass('couple-edge')) {
+                        return 30;
+                    }
+                    return 150;
+                },
+                flow: { axis: 'y', minSeparation: 150 },
+                alignment: function (node) {
+                    return node.data('depth');
+                },
+                // Gentler physics for smoother movement
+                unconstrIter: 10,
+                userConstIter: 10,
+                allConstIter: 20,
+                infinite: false  // Run once after drag
+            });
+
+            layout.run();
         });
 
         // Add birth year to label if present
@@ -123,10 +185,18 @@ FamilyTreeApp.View.Renderer = class {
         });
     }
 
+    /**
+     * Displays an error message in the container.
+     * @param {string} msg - The error message to display.
+     */
     showError(msg) {
         document.getElementById(this.containerId).innerHTML = `<div style="color:red;padding:20px;">${msg}</div>`;
     }
 
+    /**
+     * Displays a success message in the help text area.
+     * @param {string} msg - The success message to display.
+     */
     showSuccess(msg) {
         const el = document.querySelector(this.helpTextSelector);
         if (el) el.textContent = msg;

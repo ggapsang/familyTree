@@ -8,6 +8,11 @@ FamilyTreeApp.Services = FamilyTreeApp.Services || {};
 FamilyTreeApp.Services.DataLoader = class {
     constructor() { }
 
+    /**
+     * Reads an Excel file and extracts data from it.
+     * @param {File} file - The Excel file object to read.
+     * @return {Promise<Object>} A promise that resolves with an object containing peopleData, relationData, and coupleData.
+     */
     readFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -26,6 +31,12 @@ FamilyTreeApp.Services.DataLoader = class {
         });
     }
 
+    /**
+     * Processes the workbook to find relevant sheets.
+     * @param {Object} workbook - The XLSX workbook object.
+     * @return {Object} An object containing arrays of data for people, relations, and couples.
+     * @throws {Error} If the workbook doesn't have enough sheets or required columns are missing.
+     */
     processWorkbook(workbook) {
         if (!workbook.SheetNames || workbook.SheetNames.length < 2) {
             throw new Error('엑셀 파일에 최소 2개의 시트가 필요합니다.');
