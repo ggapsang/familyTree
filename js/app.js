@@ -13,13 +13,13 @@ FamilyTreeApp.App = class {
     /**
      * Creates a new App instance.
      * Initializes the services and view.
+     * @property {FamilyTreeApp.Services.DataLoader} dataLoader - Service for loading data.
+     * @property {FamilyTreeApp.Services.GraphBuilder} treeBuilder - Service for building the graph.
+     * @property {FamilyTreeApp.View.Renderer} renderer - View for rendering the graph.
      */
     constructor() {
-        /** @type {FamilyTreeApp.Services.DataLoader} Service for loading data. */
         this.dataLoader = new FamilyTreeApp.Services.DataLoader();
-        /** @type {FamilyTreeApp.Services.GraphBuilder} Service for building the graph. */
         this.treeBuilder = new FamilyTreeApp.Services.GraphBuilder();
-        /** @type {FamilyTreeApp.View.Renderer} View for rendering the graph. */
         this.renderer = new FamilyTreeApp.View.Renderer();
     }
 

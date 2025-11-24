@@ -10,13 +10,13 @@ FamilyTreeApp.Models.Couple = class {
      * Creates a new Couple instance.
      * @param {string} spouse1 - The ID (name) of the first spouse.
      * @param {string} spouse2 - The ID (name) of the second spouse.
+     * @property {string} spouse1 - The ID of the first spouse.
+     * @property {string} spouse2 - The ID of the second spouse.
+     * @property {string[]} children - Array of child IDs (names).
      */
     constructor(spouse1, spouse2) {
-        /** @type {string} The ID of the first spouse. */
         this.spouse1 = spouse1;
-        /** @type {string} The ID of the second spouse. */
         this.spouse2 = spouse2;
-        /** @type {string[]} Array of child IDs (names). */
         this.children = [];
     }
 

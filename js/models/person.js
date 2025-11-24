@@ -12,17 +12,17 @@ FamilyTreeApp.Models.Person = class {
      * @param {string} data.name - The name of the person.
      * @param {string} [data.birthYear] - The birth year of the person.
      * @param {string} [data.gender] - The gender of the person ('남' or '여').
+     * @property {string} id - The unique identifier for the person (currently the name).
+     * @property {string} name - The name of the person.
+     * @property {string} birthYear - The birth year of the person.
+     * @property {string} gender - The gender of the person. Defaults to 'unknown'.
+     * @property {boolean} isBlood - Indicates if the person is a blood relative (true) or in-law (false).
      */
     constructor(data) {
-        /** @type {string} The unique identifier for the person (currently the name). */
-        this.id = data.name; 
-        /** @type {string} The name of the person. */
+        this.id = data.name;
         this.name = data.name;
-        /** @type {string} The birth year of the person. */
         this.birthYear = data.birthYear || '';
-        /** @type {string} The gender of the person. Defaults to 'unknown'. */
         this.gender = data.gender || 'unknown';
-        /** @type {boolean} Indicates if the person is a blood relative (true) or in-law (false). */
         this.isBlood = false; // Will be determined during tree building
     }
 };

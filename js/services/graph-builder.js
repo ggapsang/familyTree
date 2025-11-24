@@ -7,20 +7,23 @@ var FamilyTreeApp = FamilyTreeApp || {};
 FamilyTreeApp.Services = FamilyTreeApp.Services || {};
 
 FamilyTreeApp.Services.GraphBuilder = class {
+    /**
+     * Initializes the GraphBuilder.
+     * @property {Map<string, Object>} peopleMap - Map of person ID to Person object.
+     * @property {Map<string, Object>} couples - Map of couple ID to Couple object.
+     * @property {Map<string, string>} personToCouple - Map of person ID to their couple ID.
+     * @property {Map<string, string[]>} parentsMap - Map of child ID to array of parent IDs.
+     * @property {Map<string, string[]>} childrenMap - Map of parent ID to array of child IDs.
+     * @property {Map<string, number>} depthMap - Map of person ID to their depth level from the pivot.
+     * @property {Map<string, {x: number, y: number}>} positionMap - Map of person ID to their calculated position.
+     */
     constructor() {
-        /** @type {Map<string, Object>} Map of person ID to Person object. */
         this.peopleMap = new Map();
-        /** @type {Map<string, Object>} Map of couple ID to Couple object. */
         this.couples = new Map();
-        /** @type {Map<string, string>} Map of person ID to their couple ID. */
         this.personToCouple = new Map();
-        /** @type {Map<string, string[]>} Map of child ID to array of parent IDs. */
         this.parentsMap = new Map(); // childKey -> [parentKeys]
-        /** @type {Map<string, string[]>} Map of parent ID to array of child IDs. */
         this.childrenMap = new Map(); // parentKey -> [childKeys]
-        /** @type {Map<string, number>} Map of person ID to their depth level from the pivot. */
         this.depthMap = new Map(); // personKey -> depth from pivot
-        /** @type {Map<string, {x: number, y: number}>} Map of person ID to their calculated position. */
         this.positionMap = new Map(); // personKey -> {x, y}
     }
 

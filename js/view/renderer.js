@@ -6,12 +6,15 @@ var FamilyTreeApp = FamilyTreeApp || {};
 FamilyTreeApp.View = FamilyTreeApp.View || {};
 
 FamilyTreeApp.View.Renderer = class {
+    /**
+     * Initializes the Renderer.
+     * @property {string} containerId - ID of the DOM element to render the graph in.
+     * @property {string} helpTextSelector - Selector for the help text element.
+     * @property {Object} cy - The Cytoscape instance.
+     */
     constructor() {
-        /** @type {string} ID of the DOM element to render the graph in. */
         this.containerId = 'tree-simple';
-        /** @type {string} Selector for the help text element. */
         this.helpTextSelector = '.help-text';
-        /** @type {Object} The Cytoscape instance. */
         this.cy = null;
     }
 
