@@ -34,34 +34,47 @@ FamilyTreeApp.View.Renderer = class {
             elements: data.elements,
 
             style: [
+                // Viewport Background
+                {
+                    selector: 'core',
+                    style: {
+                        'background-color': '#000000'
+                    }
+                },
                 // Core Node Style (Person)
                 {
                     selector: 'node[type="person"]',
                     style: {
                         'shape': 'ellipse',
-                        'width': '100px',
-                        'height': '100px',  // Same as width for perfect circle
+                        'width': '50px',
+                        'height': '50px',  // Same as width for perfect circle
                         'background-color': '#ffffff',
                         'border-width': 3,
-                        'border-color': '#ccc', // Default
+                        'border-color': '#ffffff',
                         'label': 'data(name)',
                         'text-valign': 'center',
                         'text-halign': 'center',
                         'font-size': '14px',
                         'text-wrap': 'wrap',
-                        'text-max-width': '80px'
+                        'text-max-width': '80px',
+                        'opacity': 0.8,
+                        'shadow-blur': 10,
+                        'shadow-color': '#ffffff',
+                        'shadow-opacity': 0.5,
+                        'shadow-offset-x': 0,
+                        'shadow-offset-y': 0
                     }
                 },
                 {
                     selector: 'node.male',
                     style: {
-                        'background-color': '#eef6ff' // Light Blue
+                        'background-color': '#ffffff'
                     }
                 },
                 {
                     selector: 'node.female',
                     style: {
-                        'background-color': '#fff0f5' // Light Pink
+                        'background-color': '#ffffff'
                     }
                 },
 
@@ -69,15 +82,27 @@ FamilyTreeApp.View.Renderer = class {
                 {
                     selector: 'node.blood',
                     style: {
-                        'border-color': '#333', // Black
-                        'border-width': 3
+                        'border-color': '#ffffff',
+                        'border-width': 3,
+                        'opacity': 0.8,
+                        'shadow-blur': 10,
+                        'shadow-color': '#ffffff',
+                        'shadow-opacity': 0.5,
+                        'shadow-offset-x': 0,
+                        'shadow-offset-y': 0
                     }
                 },
                 {
                     selector: 'node.inlaw',
                     style: {
-                        'border-color': '#e74c3c', // Red
-                        'border-width': 3
+                        'border-color': '#ffffff',
+                        'border-width': 3,
+                        'opacity': 0.8,
+                        'shadow-blur': 10,
+                        'shadow-color': '#ffffff',
+                        'shadow-opacity': 0.5,
+                        'shadow-offset-x': 0,
+                        'shadow-offset-y': 0
                     }
                 },
 
@@ -98,7 +123,7 @@ FamilyTreeApp.View.Renderer = class {
                 {
                     selector: 'edge.couple-edge',
                     style: {
-                        'width': 1,
+                        'width': 2,
                         'line-color': '#e74c3c',
                         'opacity': 0.4,
                         'curve-style': 'straight',
@@ -123,7 +148,7 @@ FamilyTreeApp.View.Renderer = class {
                     }
                     return 150;
                 },
-                // Preserve hierarchical structure
+                // Preserve hierarchical structure INITIALLY
                 flow: { axis: 'y', minSeparation: 150 },
                 alignment: function (node) {
                     return node.data('depth');
@@ -146,36 +171,43 @@ FamilyTreeApp.View.Renderer = class {
             cytoscape.use(cytoscapeCola);
         }
 
-        // Pause physics during drag, resume after with current positions
-        this.cy.on('free', 'node', () => {
-            // Resume physics briefly when drag ends, using CURRENT positions
-            const layout = this.cy.layout({
-                name: 'cola',
-                animate: true,
-                animationDuration: 1000,  // Slower animation for smoother feel
-                randomize: false,  // Keep current positions!
-                fit: false,  // DON'T reset viewport - THIS IS THE KEY
-                avoidOverlap: true,
-                handleDisconnected: true,
-                convergenceThreshold: 0.01,
-                nodeSpacing: 50,
-                edgeLength: function (edge) {
-                    if (edge.hasClass('couple-edge')) {
-                        return 30;
-                    }
-                    return 150;
-                },
-                flow: { axis: 'y', minSeparation: 150 },
-                alignment: function (node) {
-                    return node.data('depth');
-                },
-                // Gentler physics for smoother movement
-                unconstrIter: 10,
-                userConstIter: 10,
-                allConstIter: 20,
-                infinite: false  // Run once after drag
-            });
+        // Store the layout configuration for reuse
+        const baseLayoutConfig = {
+            name: 'cola',
+            animate: true,
+            randomize: false,
+            fit: false, // CRITICAL: Never reset zoom on interaction
+            avoidOverlap: true,
+            handleDisconnected: true,
+            nodeSpacing: 50,
+            edgeLength: function (edge) {
+                if (edge.hasClass('couple-edge')) return 30;
+                return 150;
+            },
+            // Remove flow/alignment constraints to allow free movement
+            flow: undefined,
+            alignment: undefined,
+            infinite: false
+        };
 
+        // 1. On Grab (Start Drag): Wake up physics
+        this.cy.on('grab', 'node', () => {
+            const layout = this.cy.layout({
+                ...baseLayoutConfig,
+                infinite: true, // Keep running while dragging
+                animationDuration: 0 // Instant reaction
+            });
+            layout.run();
+        });
+
+        // 2. On Free (End Drag): Settle gently
+        this.cy.on('free', 'node', () => {
+            const layout = this.cy.layout({
+                ...baseLayoutConfig,
+                infinite: false, // Run once to settle
+                animationDuration: 500, // Smooth settle
+                convergenceThreshold: 0.01
+            });
             layout.run();
         });
 

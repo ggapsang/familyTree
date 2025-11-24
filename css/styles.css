@@ -32,7 +32,8 @@ h1 {
     width: 100%;
     height: 800px;
     border: 1px solid #eee;
-    background: #fafafa;
+    background: #000000 url('../background-night-sky.jpg') center center no-repeat;
+    background-size: cover;
 }
 
 /* Cytoscape styles are mostly defined in JS, but we can add some tooltips or overlays here if needed */
