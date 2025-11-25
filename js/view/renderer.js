@@ -218,6 +218,34 @@ FamilyTreeApp.View.Renderer = class {
                 node.style('label', `${node.data('name')}\n(${birthYear})`);
             }
         });
+
+        // --- Background Grid Implementation ---
+        const container = document.getElementById(this.containerId);
+
+        // Set initial background style (Grid pattern)
+        // Using a subtle white grid on the black background
+        container.style.backgroundImage =
+            'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), ' +
+            'linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)';
+
+        // Function to update background
+        const updateBackground = () => {
+            const pan = this.cy.pan();
+            const zoom = this.cy.zoom();
+
+            // Base grid size is 50px, scaled by zoom
+            const gridSize = 50 * zoom;
+
+            container.style.backgroundPosition = `${pan.x}px ${pan.y}px`;
+            container.style.backgroundSize = `${gridSize}px ${gridSize}px`;
+        };
+
+        // Initial update
+        updateBackground();
+
+        // Sync on pan and zoom
+        this.cy.on('pan zoom', updateBackground);
+
     }
 
     /**
